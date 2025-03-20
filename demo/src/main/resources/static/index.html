@@ -1,0 +1,152 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>API Delivery</title>
+</head>
+<body>
+
+<h2>API Delivery</h2>
+
+<!-- ✅ Add API History Form (Includes all fields) -->
+<h3>Add API Delivery</h3>
+<label for="addMicroserviceName">Microservice Name:</label>
+<input type="text" id="addMicroserviceName">
+<label for="addApiName">API Name:</label>
+<input type="text" id="addApiName">
+<label for="addApiStatus">API Status:</label>
+<input type="text" id="addApiStatus">
+<label for="iterationCount">Iteration Count:</label>
+<input type="number" id="iterationCount">
+<label for="addDeliveryDate">Delivery Date:</label>
+<input type="date" id="addDeliveryDate">
+<label for="addPlannedEndDate">Planned End Date:</label>
+<input type="date" id="addPlannedEndDate">
+<label for="addStatus">Actual End Date Status:</label> <!-- ✅ Label changed but using `status` internally -->
+<input type="text" id="addStatus">
+<label for="addTesterName">Tester:</label>
+<input type="text" id="addTesterName">
+<button onclick="addApiHistory()">Add API Delivery</button>
+
+<hr>
+
+<!-- ✅ Fetch API History Section -->
+<h3>Fetch API Delivery</h3>
+<label for="microserviceName">Microservice Name:</label>
+<input type="text" id="microserviceName">
+<label for="apiName">API Name:</label>
+<input type="text" id="apiName">
+<button onclick="fetchApiHistory()">Fetch Deliveries</button>
+
+<h3>Current Deliveries</h3>
+<table border="1">
+    <thead>
+    <tr>
+        <th>MS Name</th>
+        <th>API Name</th>
+        <th>API Status</th>
+        <th>Iteration Count</th>
+        <th>Delivery Date</th>
+        <th>Planned End Date</th>
+        <th>Actual End Date Status</th> <!-- ✅ Label changed -->
+        <th>Tester</th>
+    </tr>
+    </thead>
+    <tbody id="currentDeliveryTable"></tbody>
+</table>
+
+<h3>Previous Deliveries</h3>
+<table border="1">
+    <thead>
+    <tr>
+        <th>MS Name</th>
+        <th>API Name</th>
+        <th>API Status</th>
+        <th>Iteration Count</th>
+        <th>Delivery Date</th>
+        <th>Planned End Date</th>
+        <th>Actual End Date Status</th> <!-- ✅ Label changed -->
+        <th>Tester</th>
+    </tr>
+    </thead>
+    <tbody id="previousDeliveriesTable"></tbody>
+</table>
+
+<script>
+    // ✅ Function to Add API History (Includes all fields)
+    function addApiHistory() {
+        let data = {
+            microserviceName: document.getElementById("addMicroserviceName").value,
+            apiName: document.getElementById("addApiName").value,
+            apiStatus: document.getElementById("addApiStatus").value,
+            iterationCount: parseInt(document.getElementById("iterationCount").value),
+            deliveryDate: document.getElementById("addDeliveryDate").value,
+            plannedEndDate: document.getElementById("addPlannedEndDate").value,
+            status: document.getElementById("addStatus").value, // ✅ Internally using `status`
+            testerName: document.getElementById("addTesterName").value
+        };
+
+        fetch("/api-history/add", {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify(data)
+        })
+            .then(response => response.json())
+            .then(result => {
+                alert("API Delivery added successfully!");
+                fetchApiHistory(); // Refresh the table after adding
+            })
+            .catch(error => console.error("Error adding API history:", error));
+    }
+
+    // ✅ Function to Fetch API History (Unchanged)
+    function fetchApiHistory() {
+        let microserviceName = document.getElementById("microserviceName").value;
+        let apiName = document.getElementById("apiName").value;
+
+        fetch(`/api-history/fetch?microserviceName=${microserviceName}&apiName=${apiName}`)
+            .then(response => response.json())
+            .then(data => {
+                if (data.message) {
+                    alert(data.message); // No records found
+                    return;
+                }
+
+                // ✅ Display Current Deliveries
+                let currentDelivery = data.currentDelivery;
+                document.getElementById("currentDeliveryTable").innerHTML = `
+                <tr>
+                    <td>${currentDelivery.microserviceName}</td>
+                    <td>${currentDelivery.apiName}</td>
+                    <td>${currentDelivery.apiStatus}</td>
+                    <td>${currentDelivery.iterationCount}</td>
+                    <td>${currentDelivery.deliveryDate}</td>
+                    <td>${currentDelivery.plannedEndDate}</td>
+                    <td>${currentDelivery.status}</td>
+                    <td>${currentDelivery.testerName}</td>
+                </tr>`;
+
+                // ✅ Display Previous Deliveries
+                let previousDeliveriesTable = document.getElementById("previousDeliveriesTable");
+                previousDeliveriesTable.innerHTML = "";
+                data.previousDeliveries.forEach(entry => {
+                    previousDeliveriesTable.innerHTML += `
+                    <tr>
+                        <td>${entry.microserviceName}</td>
+                        <td>${entry.apiName}</td>
+                        <td>${entry.apiStatus}</td>
+                        <td>${entry.iterationCount}</td>
+                        <td>${entry.deliveryDate}</td>
+                        <td>${entry.plannedEndDate}</td>
+                        <td>${entry.status}</td>
+                        <td>${entry.testerName}</td>
+                    </tr>`;
+                });
+            })
+            .catch(error => console.error("Error fetching API Delivery:", error));
+    }
+</script>
+
+</body>
+</html>

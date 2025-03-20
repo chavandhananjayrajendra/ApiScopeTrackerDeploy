@@ -15,18 +15,30 @@ public class ApiHistoryController {
     @Autowired
     private ApiHistoryService apiHistoryService;
 
-    @GetMapping("/{microservice}/{apiName}")
-    public ResponseEntity<List<ApiHistory>> getHistory(@PathVariable String microservice, @PathVariable String apiName) {
-        return ResponseEntity.ok(apiHistoryService.getHistoryByApi(microservice, apiName));
+    @PostMapping("/add")
+    public ResponseEntity<?> addApiHistory(@RequestBody ApiHistory apiHistory) {
+        try {
+            return ResponseEntity.ok(apiHistoryService.saveApiHistory(apiHistory));
+        } catch (RuntimeException e) {
+            return ResponseEntity.badRequest().body(e.getMessage());
+        }
     }
 
-    @GetMapping("/microservices")
-    public ResponseEntity<List<String>> getMicroservices() {
-        return ResponseEntity.ok(apiHistoryService.getAllMicroservices());
+    @GetMapping("/current/{microservice}/{apiName}")
+    public ResponseEntity<List<ApiHistory>> getCurrentDelivery(
+            @PathVariable String microservice, @PathVariable String apiName) {
+        return ResponseEntity.ok(apiHistoryService.getCurrentDelivery(microservice, apiName));
     }
 
-    @GetMapping("/apis/{microservice}")
-    public ResponseEntity<List<ApiHistory>> getApis(@PathVariable String microservice) {
-        return ResponseEntity.ok(apiHistoryService.getApisByMicroservice(microservice));
+    @GetMapping("/previous/{microservice}/{apiName}")
+    public ResponseEntity<List<ApiHistory>> getPreviousDeliveries(
+            @PathVariable String microservice, @PathVariable String apiName) {
+        return ResponseEntity.ok(apiHistoryService.getPreviousDeliveries(microservice, apiName));
+    }
+    // ✅ New endpoint for fetchApiHistory
+    @GetMapping("/fetch")
+    public ResponseEntity<?> fetchApiHistory(
+            @RequestParam String microserviceName, @RequestParam String apiName) {
+        return ResponseEntity.ok(apiHistoryService.fetchApiHistory(microserviceName, apiName));
     }
 }

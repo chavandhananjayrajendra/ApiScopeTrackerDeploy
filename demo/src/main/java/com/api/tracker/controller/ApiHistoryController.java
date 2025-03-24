@@ -5,8 +5,8 @@ import com.api.tracker.service.ApiHistoryService;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
-
 import java.util.List;
+import java.util.Map;
 
 @RestController
 @RequestMapping("/api-history")
@@ -35,9 +35,9 @@ public class ApiHistoryController {
             @PathVariable String microservice, @PathVariable String apiName) {
         return ResponseEntity.ok(apiHistoryService.getPreviousDeliveries(microservice, apiName));
     }
-    // ✅ New endpoint for fetchApiHistory
+
     @GetMapping("/fetch")
-    public ResponseEntity<?> fetchApiHistory(
+    public ResponseEntity<Map<String, Object>> fetchApiHistory(
             @RequestParam String microserviceName, @RequestParam String apiName) {
         return ResponseEntity.ok(apiHistoryService.fetchApiHistory(microserviceName, apiName));
     }

@@ -4,11 +4,10 @@ import com.api.tracker.entity.ApiHistory;
 import com.api.tracker.repository.ApiHistoryRepository;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
-
 import java.util.HashMap;
 import java.util.List;
-import java.time.LocalDateTime;
 import java.util.Map;
+import java.util.Optional;
 
 @Service
 public class ApiHistoryService {
@@ -17,15 +16,22 @@ public class ApiHistoryService {
     private ApiHistoryRepository apiHistoryRepository;
 
     public ApiHistory saveApiHistory(ApiHistory newEntry) {
-        Integer maxIteration = apiHistoryRepository.findMaxIterationCount(newEntry.getMicroserviceName(), newEntry.getApiName());
-        maxIteration = (maxIteration == null) ? 0 : maxIteration;
+        Optional<Integer> maxIterationOpt = Optional.ofNullable(apiHistoryRepository.findMaxIterationCount(
+                newEntry.getMicroserviceName(), newEntry.getApiName()
+        ));
 
-        if (newEntry.getIterationCount() > maxIteration) {
-            newEntry.setModifiedAt(LocalDateTime.now());
-            return apiHistoryRepository.save(newEntry);
+        if (maxIterationOpt.isPresent()) {
+            int maxIteration = maxIterationOpt.get();
+            if (newEntry.getIterationCount() != maxIteration + 1) {
+                throw new RuntimeException("Invalid iteration count! Expected: " + (maxIteration + 1));
+            }
         } else {
-            throw new RuntimeException("Iteration count must be greater than the previous entry!");
+            if (newEntry.getIterationCount() != 1) {
+                throw new RuntimeException("Invalid iteration count! Expected: 1");
+            }
         }
+
+        return apiHistoryRepository.save(newEntry);
     }
 
     public List<ApiHistory> getCurrentDelivery(String microserviceName, String apiName) {
@@ -35,7 +41,6 @@ public class ApiHistoryService {
     public List<ApiHistory> getPreviousDeliveries(String microserviceName, String apiName) {
         return apiHistoryRepository.findPreviousDeliveries(microserviceName, apiName);
     }
-    // ✅ New method to fetch both current and previous deliveries
 
     public Map<String, Object> fetchApiHistory(String microserviceName, String apiName) {
         List<ApiHistory> currentDelivery = getCurrentDelivery(microserviceName, apiName);

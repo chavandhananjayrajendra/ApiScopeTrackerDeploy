@@ -9,25 +9,35 @@
 
 <h2>API Delivery</h2>
 
-<!-- ✅ Add API History Form (Includes all fields) -->
+<!-- ✅ Add API Delivery Form -->
 <h3>Add API Delivery</h3>
-<label for="addMicroserviceName">Microservice Name:</label>
-<input type="text" id="addMicroserviceName">
-<label for="addApiName">API Name:</label>
-<input type="text" id="addApiName">
-<label for="addApiStatus">API Status:</label>
-<input type="text" id="addApiStatus">
-<label for="iterationCount">Iteration Count:</label>
-<input type="number" id="iterationCount">
-<label for="addDeliveryDate">Delivery Date:</label>
-<input type="date" id="addDeliveryDate">
-<label for="addPlannedEndDate">Planned End Date:</label>
-<input type="date" id="addPlannedEndDate">
-<label for="addStatus">Actual End Date Status:</label> <!-- ✅ Label changed but using `status` internally -->
-<input type="text" id="addStatus">
-<label for="addTesterName">Tester:</label>
-<input type="text" id="addTesterName">
-<button onclick="addApiHistory()">Add API Delivery</button>
+<form onsubmit="return addApiHistory(event);">
+    <label for="addMicroserviceName">Microservice Name:</label>
+    <input type="text" id="addMicroserviceName" required>
+
+    <label for="addApiName">API Name:</label>
+    <input type="text" id="addApiName" required>
+
+    <label for="addApiStatus">API Status:</label>
+    <input type="text" id="addApiStatus" required>
+
+    <label for="iterationCount">Iteration Count:</label>
+    <input type="number" id="iterationCount" required>
+
+    <label for="addDeliveryDate">Delivery Date:</label>
+    <input type="date" id="addDeliveryDate" required>
+
+    <label for="addPlannedEndDate">Planned End Date:</label>
+    <input type="date" id="addPlannedEndDate" required>
+
+    <label for="addStatus">Actual End Date Status:</label>
+    <input type="text" id="addStatus" required>
+
+    <label for="addTesterName">Tester:</label>
+    <input type="text" id="addTesterName" required>
+
+    <button type="submit">Add API Delivery</button>
+</form>
 
 <hr>
 
@@ -49,7 +59,7 @@
         <th>Iteration Count</th>
         <th>Delivery Date</th>
         <th>Planned End Date</th>
-        <th>Actual End Date Status</th> <!-- ✅ Label changed -->
+        <th>Actual End Date Status</th>
         <th>Tester</th>
     </tr>
     </thead>
@@ -66,7 +76,7 @@
         <th>Iteration Count</th>
         <th>Delivery Date</th>
         <th>Planned End Date</th>
-        <th>Actual End Date Status</th> <!-- ✅ Label changed -->
+        <th>Actual End Date Status</th>
         <th>Tester</th>
     </tr>
     </thead>
@@ -74,18 +84,26 @@
 </table>
 
 <script>
-    // ✅ Function to Add API History (Includes all fields)
-    function addApiHistory() {
+    // ✅ Function to Add API History
+    function addApiHistory(event) {
+        event.preventDefault(); // Prevents form refresh
+
         let data = {
-            microserviceName: document.getElementById("addMicroserviceName").value,
-            apiName: document.getElementById("addApiName").value,
-            apiStatus: document.getElementById("addApiStatus").value,
-            iterationCount: parseInt(document.getElementById("iterationCount").value),
+            microserviceName: document.getElementById("addMicroserviceName").value.trim(),
+            apiName: document.getElementById("addApiName").value.trim(),
+            apiStatus: document.getElementById("addApiStatus").value.trim(),
+            iterationCount: parseInt(document.getElementById("iterationCount").value) || 0,
             deliveryDate: document.getElementById("addDeliveryDate").value,
             plannedEndDate: document.getElementById("addPlannedEndDate").value,
-            status: document.getElementById("addStatus").value, // ✅ Internally using `status`
-            testerName: document.getElementById("addTesterName").value
+            status: document.getElementById("addStatus").value.trim(),
+            testerName: document.getElementById("addTesterName").value.trim()
         };
+
+        // ✅ Ensure all fields are filled
+        if (Object.values(data).some(value => value === "")) {
+            alert("All fields are required!");
+            return;
+        }
 
         fetch("/api-history/add", {
             method: "POST",
@@ -95,15 +113,19 @@
             .then(response => response.json())
             .then(result => {
                 alert("API Delivery added successfully!");
-                fetchApiHistory(); // Refresh the table after adding
+                document.querySelector("form").reset(); // Clear form fields
+                fetchApiHistory(); // Refresh the table
             })
-            .catch(error => console.error("Error adding API history:", error));
+            .catch(error => {
+                console.error("Error adding API history:", error);
+                alert("Failed to add API delivery.");
+            });
     }
 
-    // ✅ Function to Fetch API History (Unchanged)
+    // ✅ Function to Fetch API History
     function fetchApiHistory() {
-        let microserviceName = document.getElementById("microserviceName").value;
-        let apiName = document.getElementById("apiName").value;
+        let microserviceName = document.getElementById("microserviceName").value.trim();
+        let apiName = document.getElementById("apiName").value.trim();
 
         fetch(`/api-history/fetch?microserviceName=${microserviceName}&apiName=${apiName}`)
             .then(response => response.json())
@@ -114,18 +136,23 @@
                 }
 
                 // ✅ Display Current Deliveries
-                let currentDelivery = data.currentDelivery;
-                document.getElementById("currentDeliveryTable").innerHTML = `
-                <tr>
-                    <td>${currentDelivery.microserviceName}</td>
-                    <td>${currentDelivery.apiName}</td>
-                    <td>${currentDelivery.apiStatus}</td>
-                    <td>${currentDelivery.iterationCount}</td>
-                    <td>${currentDelivery.deliveryDate}</td>
-                    <td>${currentDelivery.plannedEndDate}</td>
-                    <td>${currentDelivery.status}</td>
-                    <td>${currentDelivery.testerName}</td>
-                </tr>`;
+                let currentDeliveryTable = document.getElementById("currentDeliveryTable");
+                currentDeliveryTable.innerHTML = "";
+
+                if (data.currentDelivery) {
+                    let c = data.currentDelivery;
+                    currentDeliveryTable.innerHTML += `
+                    <tr>
+                        <td>${c.microserviceName}</td>
+                        <td>${c.apiName}</td>
+                        <td>${c.apiStatus}</td>
+                        <td>${c.iterationCount}</td>
+                        <td>${c.deliveryDate}</td>
+                        <td>${c.plannedEndDate}</td>
+                        <td>${c.status}</td>
+                        <td>${c.testerName}</td>
+                    </tr>`;
+                }
 
                 // ✅ Display Previous Deliveries
                 let previousDeliveriesTable = document.getElementById("previousDeliveriesTable");
@@ -144,7 +171,10 @@
                     </tr>`;
                 });
             })
-            .catch(error => console.error("Error fetching API Delivery:", error));
+            .catch(error => {
+                console.error("Error fetching API history:", error);
+                alert("Failed to fetch API deliveries.");
+            });
     }
 </script>
 

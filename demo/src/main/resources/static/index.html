@@ -26,7 +26,6 @@
             font-weight: bold;
         }
         input[type="text"],
-        input[type="number"],
         input[type="date"] {
             width: 100%;
             padding: 8px;
@@ -50,38 +49,27 @@
         table {
             width: 100%;
             border-collapse: collapse;
-            margin: 20px 0;
+            margin-top: 20px;
         }
         th, td {
             border: 1px solid #ddd;
-            padding: 8px;
+            padding: 10px;
             text-align: left;
         }
         th {
-            background-color: #3498db;
+            background: #2c3e50;
             color: white;
-        }
-        tr:nth-child(even) {
-            background-color: #f2f2f2;
-        }
-        hr {
-            margin: 30px 0;
-            border: 0;
-            border-top: 1px solid #eee;
-        }
-        #previousDeliveriesSection {
-            margin-top: 20px;
         }
     </style>
 </head>
-<body>
+<body onload="setDefaultDates()">
 
 <h2>API Delivery</h2>
 
 <!-- ✅ Add API Delivery Form -->
-<div style="background: #f9f9f9; padding: 20px; border-radius: 5px; margin-bottom: 30px;">
+<div>
     <h3>Add API Delivery</h3>
-    <form onsubmit="return addApiHistory(event);">
+    <form onsubmit="return addApiHistory(event);" target="_blank">
         <label for="addMicroserviceName">Microservice Name:</label>
         <input type="text" id="addMicroserviceName" required>
 
@@ -90,9 +78,6 @@
 
         <label for="addApiStatus">API Status:</label>
         <input type="text" id="addApiStatus" required>
-
-        <label for="iterationCount">Iteration Count:</label>
-        <input type="number" id="iterationCount" required>
 
         <label for="addDeliveryDate">Delivery Date:</label>
         <input type="date" id="addDeliveryDate" required>
@@ -129,16 +114,27 @@
     <div style="overflow-x: auto;">
         <table>
             <thead>
-            <tr>
-                <th>MS Name</th>
-                <th>API Name</th>
-                <th>API Status</th>
-                <th>Iteration Count</th>
-                <th>Delivery Date</th>
-                <th>Planned End Date</th>
-                <th>Actual End Date Status</th>
-                <th>Tester</th>
+
+            <!--            <tr>-->
+            <!--                <th>MS Name</th>-->
+            <!--                <th>API Name</th>-->
+            <!--                <th>API Status</th>-->
+            <!--                <th>Iteration Count</th>-->
+            <!--                <th>Delivery Date</th>-->
+            <!--                <th>Planned End Date</th>-->
+            <!--                <th>Actual End Date Status</th>-->
+            <!--                <th>Tester</th>-->
+            <!--            </tr>--><tr>
+                <th><input id="filter-microserviceName" placeholder="Filter..." /></th>
+                <th><input id="filter-apiName" placeholder="Filter..." /></th>
+                <th><input id="filter-apiStatus" placeholder="Filter..." /></th>
+                <th><input id="filter-iterationCount" placeholder="Filter..." /></th>
+                <th><input id="filter-deliveryDate" placeholder="Filter..." /></th>
+                <th><input id="filter-plannedEndDate" placeholder="Filter..." /></th>
+                <th><input id="filter-status" placeholder="Filter..." /></th>
+                <th><input id="filter-testerName" placeholder="Filter..." /></th>
             </tr>
+
             </thead>
             <tbody id="currentDeliveryTable"></tbody>
         </table>
@@ -170,8 +166,20 @@
     </div>
 </div>
 
+
+<!-- ✅ Display API History -->
+
+
 <script>
-    // ✅ Fetch the max iteration count before inserting
+    function setDefaultDates() {
+        let today = new Date();
+        let plannedEndDate = new Date();
+        plannedEndDate.setDate(today.getDate() + 5);
+
+        document.getElementById("addDeliveryDate").value = today.toISOString().split("T")[0];
+        document.getElementById("addPlannedEndDate").value = plannedEndDate.toISOString().split("T")[0];
+    }
+
     async function getMaxIterationCount(microserviceName, apiName) {
         try {
             const response = await fetch(`/api-history/fetch?microserviceName=${microserviceName}&apiName=${apiName}`);
@@ -183,28 +191,14 @@
         }
     }
 
-    // ✅ Function to Add API History with iteration count validation
     async function addApiHistory(event) {
         event.preventDefault();
 
         let microserviceName = document.getElementById("addMicroserviceName").value.trim();
         let apiName = document.getElementById("addApiName").value.trim();
-        let iterationCount = parseInt(document.getElementById("iterationCount").value) || 0;
 
-        // ✅ Fetch max iteration count
         let maxIteration = await getMaxIterationCount(microserviceName, apiName);
-
-        if (maxIteration === null) {
-            if (iterationCount !== 1) {
-                alert("Invalid iteration count! First entry must be 1.");
-                return;
-            }
-        } else {
-            if (iterationCount !== maxIteration + 1) {
-                alert(`Invalid iteration count! Expected: ${maxIteration + 1}`);
-                return;
-            }
-        }
+        let iterationCount = maxIteration === null ? 1 : maxIteration + 1;
 
         let data = {
             microserviceName: microserviceName,
@@ -222,23 +216,25 @@
             headers: { "Content-Type": "application/json" },
             body: JSON.stringify(data)
         })
-            .then(response => response.json())
-            .then(result => {
-                if (result && result.error) {
-                    alert(result.error);
-                } else {
-                    alert("API Delivery added successfully!");
-                    document.querySelector("form").reset();
-                    fetchApiHistory();
+            .then(response => {
+                if (!response.ok) {
+                    return response.text().then(text => { throw new Error(text); });
                 }
+                return response.json();
+            })
+            .then(result => {
+                alert("API Delivery added successfully!");
+                document.querySelector("form").reset();
+                setDefaultDates();
             })
             .catch(error => {
                 console.error("Error adding API history:", error);
-                alert("Failed to add API delivery.");
+                alert("Failed to add API delivery: " + error.message);
             });
     }
 
-    // ✅ Function to Fetch API History (Only Current Deliveries)
+    let latestData = null;
+
     function fetchApiHistory() {
         let microserviceName = document.getElementById("microserviceName").value.trim();
         let apiName = document.getElementById("apiName").value.trim();
@@ -282,8 +278,6 @@
                 alert("Failed to fetch API deliveries.");
             });
     }
-
-    // ✅ Function to Fetch & Display Previous Deliveries when button is clicked
     function fetchPreviousDeliveries() {
         let microserviceName = document.getElementById("microserviceName").value.trim();
         let apiName = document.getElementById("apiName").value.trim();
@@ -320,6 +314,88 @@
                 alert("Failed to fetch previous deliveries.");
             });
     }
+    let allApiHistoryData = [];
+
+    function fetchApiHistory() {
+        fetch(`/api-history/fetch-all`)
+            .then(response => response.json())
+            .then(data => {
+                allApiHistoryData = data;
+                renderApiHistoryTable(); // default: show only latest
+                setupFilters();
+            })
+            .catch(error => {
+                console.error("Error fetching API history:", error);
+                alert("Failed to fetch API deliveries.");
+            });
+    }
+
+    function renderApiHistoryTable(showLatestOnly = true) {
+        let table = document.getElementById("currentDeliveryTable");
+        table.innerHTML = "";
+
+        const filtered = allApiHistoryData.filter(entry => {
+            if (showLatestOnly && !entry.latest) return false;
+
+            for (let field of filterFields) {
+                const input = document.getElementById(`filter-${field}`).value.trim().toLowerCase();
+                if (input && !entry[field]?.toString().toLowerCase().includes(input)) {
+                    return false;
+                }
+            }
+
+            return true;
+        });
+
+        if (filtered.length === 0) {
+            table.innerHTML = `<tr><td colspan="8" style="text-align:center;">No matching records found</td></tr>`;
+            return;
+        }
+
+        for (let entry of filtered) {
+            table.innerHTML += `
+        <tr>
+            <td>${entry.microserviceName}</td>
+            <td>${entry.apiName}</td>
+            <td>${entry.apiStatus}</td>
+            <td>${entry.iterationCount}</td>
+            <td>${entry.deliveryDate}</td>
+            <td>${entry.plannedEndDate}</td>
+            <td>${entry.status}</td>
+            <td>${entry.testerName}</td>
+        </tr>`;
+        }
+    }
+
+    const filterFields = [
+        "microserviceName",
+        "apiName",
+        "apiStatus",
+        "iterationCount",
+        "deliveryDate",
+        "plannedEndDate",
+        "status",
+        "testerName"
+    ];
+
+    function setupFilters() {
+        for (let field of filterFields) {
+            const input = document.getElementById(`filter-${field}`);
+            if (input) {
+                input.addEventListener("input", () => renderApiHistoryTable(document.getElementById("latestOnly").checked));
+            }
+        }
+
+        document.getElementById("latestOnly").addEventListener("change", () => {
+            renderApiHistoryTable(document.getElementById("latestOnly").checked);
+        });
+    }
+
+
+
+
+
+
 </script>
 
 </body>

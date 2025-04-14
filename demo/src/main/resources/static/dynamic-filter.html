@@ -1,0 +1,175 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>API History - Dynamic Filtering</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            margin: 30px;
+        }
+
+        h2 {
+            margin-bottom: 20px;
+        }
+
+        table {
+            width: 100%;
+            border-collapse: collapse;
+            margin-top: 10px;
+            box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+        }
+
+        th, td {
+            padding: 10px;
+            border: 1px solid #ccc;
+            text-align: left;
+        }
+
+        th select {
+            width: 100%;
+        }
+
+        label {
+            font-weight: normal;
+        }
+
+        .filter-row th {
+            background-color: #f1f1f1;
+        }
+
+        input[type="checkbox"] {
+            margin-left: 10px;
+        }
+    </style>
+</head>
+<body>
+
+<h2>API History - Dynamic Filtering</h2>
+
+<label>
+    <input type="checkbox" id="showPrevious"> Show Previous Deliveries
+</label>
+
+<table id="apiHistoryTable">
+    <thead>
+    <tr class="filter-row">
+        <th><select id="filterId"><option value="">ID</option></select></th>
+        <th><select id="filterMicroservice"><option value="">Microservice</option></select></th>
+        <th><select id="filterApi"><option value="">API</option></select></th>
+        <th><select id="filterStatus"><option value="">Status</option></select></th>
+        <th><select id="filterTester"><option value="">Tester</option></select></th>
+        <th><select id="filterEndStatus"><option value="">Actual End Status</option></select></th>
+        <th><select id="filterIteration"><option value="">Iteration</option></select></th>
+    </tr>
+    <tr>
+        <th>ID</th>
+        <th>Microservice</th>
+        <th>API</th>
+        <th>Status</th>
+        <th>Tester</th>
+        <th>Actual End Status</th>
+        <th>Iteration</th>
+    </tr>
+    </thead>
+    <tbody id="apiHistoryBody">
+    </tbody>
+</table>
+
+<script>
+    const filters = {
+        id: '',
+        microserviceName: '',
+        apiName: '',
+        apiStatus: '',
+        testerName: '',
+        status: '',
+        iterationCount: '',
+        includePrevious: false
+    };
+
+    const apiUrl = '/api/history/dynamic-filter';
+
+    document.querySelectorAll('.filter-row select').forEach(select => {
+        select.addEventListener('change', () => {
+            filters.id = document.getElementById('filterId').value;
+            filters.microserviceName = document.getElementById('filterMicroservice').value;
+            filters.apiName = document.getElementById('filterApi').value;
+            filters.apiStatus = document.getElementById('filterStatus').value;
+            filters.testerName = document.getElementById('filterTester').value;
+            filters.status = document.getElementById('filterEndStatus').value;
+            filters.iterationCount = document.getElementById('filterIteration').value;
+            filters.includePrevious = document.getElementById('showPrevious').checked;
+            fetchData();
+        });
+    });
+
+    document.getElementById('showPrevious').addEventListener('change', () => {
+        filters.includePrevious = document.getElementById('showPrevious').checked;
+        fetchData();
+    });
+
+    function fetchData() {
+        const { includePrevious, ...filterBody } = filters;
+
+        fetch(`${apiUrl}?includePrevious=${includePrevious}`, {
+            method: 'POST',
+            headers: {'Content-Type': 'application/json'},
+            body: JSON.stringify(filterBody)
+        })
+            .then(res => res.json())
+            .then(data => {
+                populateTable(data);
+                populateDropdowns(data);
+            });
+    }
+
+    function populateTable(data) {
+        const tbody = document.getElementById('apiHistoryBody');
+        tbody.innerHTML = '';
+        data.forEach(row => {
+            const tr = document.createElement('tr');
+            tr.innerHTML = `
+                <td>${row.id ?? '—'}</td>
+                <td>${row.microserviceName ?? '—'}</td>
+                <td>${row.apiName ?? '—'}</td>
+                <td>${row.apiStatus ?? '—'}</td>
+                <td>${row.testerName ?? '—'}</td>
+                <td>${row.status ?? '—'}</td>
+                <td>${row.iterationCount ?? '—'}</td>
+            `;
+            tbody.appendChild(tr);
+        });
+    }
+
+    function populateDropdowns(data) {
+        const getUnique = (arr, key) =>
+            [...new Set(arr.map(item => item[key]).filter(val => val !== null && val !== undefined))].sort();
+
+        const fields = {
+            filterId: 'id',
+            filterMicroservice: 'microserviceName',
+            filterApi: 'apiName',
+            filterStatus: 'apiStatus',
+            filterTester: 'testerName',
+            filterEndStatus: 'status',
+            filterIteration: 'iterationCount'
+        };
+
+        for (const [selectId, key] of Object.entries(fields)) {
+            const select = document.getElementById(selectId);
+            const current = select.value;
+            const options = getUnique(data, key);
+            select.innerHTML = `<option value="">${select.options[0].text}</option>`;
+            options.forEach(val => {
+                select.innerHTML += `<option value="${val}">${val}</option>`;
+            });
+            select.value = current;
+        }
+    }
+
+    // Initial fetch
+    fetchData();
+</script>
+</body>
+</html>

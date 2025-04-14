@@ -41,4 +41,9 @@ public class ApiHistoryController {
             @RequestParam String microserviceName, @RequestParam String apiName) {
         return ResponseEntity.ok(apiHistoryService.fetchApiHistory(microserviceName, apiName));
     }
+
+    @GetMapping("/fetch-all")
+    public ResponseEntity<List<ApiHistory>> fetchAllApiHistories() {
+        return  ResponseEntity.ok(apiHistoryService.fetchAllApiHistories());
+    }
 }

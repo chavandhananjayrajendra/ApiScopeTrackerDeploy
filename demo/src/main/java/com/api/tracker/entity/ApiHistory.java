@@ -11,6 +11,7 @@ public class ApiHistory {
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long id;
 
+
     private String microserviceName;
     private String apiName;
     private int iterationCount;

@@ -1,0 +1,135 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>API History Table</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            margin: 20px;
+        }
+        h2 {
+            margin-bottom: 20px;
+        }
+        table {
+            width: 100%;
+            border-collapse: collapse;
+            margin-top: 10px;
+        }
+        th, td {
+            border: 1px solid #ccc;
+            padding: 8px;
+            text-align: left;
+        }
+        th {
+            background-color: #f0f0f0;
+        }
+        select {
+            width: 100%;
+            padding: 4px;
+            margin-bottom: 4px;
+        }
+        .filters-row select {
+            font-size: 0.9em;
+        }
+    </style>
+</head>
+<body>
+<h2>API History - Dynamic Filtering</h2>
+
+<label>
+    <input type="checkbox" id="togglePrevious" /> Show Previous Deliveries
+</label>
+
+<table>
+    <thead>
+    <tr class="filters-row">
+        <th><select id="filter-id"></select>ID</th>
+        <th><select id="filter-microservice"></select>Microservice</th>
+        <th><select id="filter-api"></select>API</th>
+        <th><select id="filter-status"></select>Status</th>
+        <th><select id="filter-tester"></select>Tester</th>
+        <th><select id="filter-end-status"></select>Actual End Status</th>
+        <th><select id="filter-iteration"></select>Iteration</th>
+    </tr>
+    </thead>
+    <tbody id="table-body">
+    <!-- Data rows inserted here -->
+    </tbody>
+</table>
+
+<script>
+    const apiUrl = "/api/history/fetchApiHistoryWithFilters";
+
+    const tableBody = document.getElementById("table-body");
+    const filterIds = {
+        id: "filter-id",
+        microserviceName: "filter-microservice",
+        apiName: "filter-api",
+        status: "filter-status",
+        testerName: "filter-tester",
+        previousStatus: "filter-end-status",
+        iterationCount: "filter-iteration"
+    };
+
+    let fullData = [];
+
+    async function fetchData() {
+        const includePrevious = document.getElementById("togglePrevious").checked;
+        try {
+            const res = await fetch(`${apiUrl}?includePreviousDeliveries=${includePrevious}`);
+            const data = await res.json();
+            fullData = data;
+            populateFilters(data);
+            renderTable(data);
+        } catch (err) {
+            console.error("Fetch error:", err);
+        }
+    }
+
+    function populateFilters(data) {
+        Object.entries(filterIds).forEach(([key, filterId]) => {
+            const select = document.getElementById(filterId);
+            const values = [...new Set(data.map(item => item[key]))];
+            select.innerHTML = `<option value="">All</option>` + values
+                .filter(v => v !== undefined && v !== null)
+                .map(v => `<option value="${v}">${v}</option>`)
+                .join("");
+        });
+    }
+
+    function renderTable(data) {
+        const filters = Object.fromEntries(
+            Object.entries(filterIds).map(([key, filterId]) => [key, document.getElementById(filterId).value])
+        );
+
+        const filtered = data.filter(item => {
+            return Object.entries(filters).every(([key, value]) => {
+                return !value || item[key]?.toString() === value;
+            });
+        });
+
+        tableBody.innerHTML = filtered.map(row => `
+        <tr>
+          <td>${row.id || ""}</td>
+          <td>${row.microserviceName || ""}</td>
+          <td>${row.apiName || ""}</td>
+          <td>${row.status || ""}</td>
+          <td>${row.testerName || ""}</td>
+          <td>${row.previousStatus || ""}</td>
+          <td>${row.iterationCount || ""}</td>
+        </tr>
+      `).join("");
+    }
+
+    Object.values(filterIds).forEach(id => {
+        document.getElementById(id).addEventListener("change", () => renderTable(fullData));
+    });
+
+    document.getElementById("togglePrevious").addEventListener("change", fetchData);
+
+    window.onload = fetchData;
+</script>
+</body>
+</html>

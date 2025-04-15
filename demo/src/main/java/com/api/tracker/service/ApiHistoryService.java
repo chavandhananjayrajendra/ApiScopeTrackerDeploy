@@ -55,4 +55,11 @@ public class ApiHistoryService {
         }
         return response;
     }
+
+    public List<ApiHistory> fetchAllApiHistories() {
+        return apiHistoryRepository.findAll();
+    }
+
+    
+
 }

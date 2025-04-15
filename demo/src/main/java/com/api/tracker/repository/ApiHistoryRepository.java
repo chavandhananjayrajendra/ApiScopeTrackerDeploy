@@ -2,13 +2,14 @@ package com.api.tracker.repository;
 
 import com.api.tracker.entity.ApiHistory;
 import org.springframework.data.jpa.repository.JpaRepository;
+import org.springframework.data.jpa.repository.JpaSpecificationExecutor;
 import org.springframework.data.jpa.repository.Query;
 import org.springframework.stereotype.Repository;
 
 import java.util.List;
 
 @Repository
-public interface ApiHistoryRepository extends JpaRepository<ApiHistory, Long> {
+public interface ApiHistoryRepository extends JpaRepository<ApiHistory, Long>, JpaSpecificationExecutor<ApiHistory> {
 
     @Query("SELECT MAX(a.iterationCount) FROM ApiHistory a WHERE a.microserviceName = ?1 AND a.apiName = ?2")
     Integer findMaxIterationCount(String microserviceName, String apiName);

@@ -29,6 +29,12 @@ public class ApiHistorySpecification {
             if (filters.getStatus() != null && !filters.getStatus().isEmpty()) {
                 predicates.add(cb.equal(root.get("status"), filters.getStatus()));
             }
+            if (filters.getDeliveryDate() != null) {
+                predicates.add(cb.equal(root.get("deliveryDate"), filters.getDeliveryDate()));
+            }
+            if (filters.getPlannedEndDate() != null) {
+                predicates.add(cb.equal(root.get("plannedEndDate"), filters.getPlannedEndDate()));
+            }
 
             return cb.and(predicates.toArray(new Predicate[0]));
         };

@@ -3,6 +3,8 @@
 <head>
     <meta charset="UTF-8">
     <title>API History - Dynamic Filtering</title>
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/choices.js/public/assets/styles/choices.min.css" />
+
     <style>
         body {
             font-family: Arial, sans-serif;
@@ -44,6 +46,7 @@
     </style>
 </head>
 <body>
+<script src="https://cdn.jsdelivr.net/npm/choices.js/public/assets/scripts/choices.min.js"></script>
 
 <h2>API History - Dynamic Filtering</h2>
 
@@ -54,20 +57,22 @@
 <table id="apiHistoryTable">
     <thead>
     <tr class="filter-row">
-        <th><select id="filterId"><option value="">ID</option></select></th>
         <th><select id="filterMicroservice"><option value="">Microservice</option></select></th>
         <th><select id="filterApi"><option value="">API</option></select></th>
         <th><select id="filterStatus"><option value="">Status</option></select></th>
         <th><select id="filterTester"><option value="">Tester</option></select></th>
+        <th><select id="filterDeliveryDate"><option value="">Delivery Date</option></select></th>
+        <th><select id="filterPlannedEndDate"><option value="">Planned End Date</option></select></th>
         <th><select id="filterEndStatus"><option value="">Actual End Status</option></select></th>
         <th><select id="filterIteration"><option value="">Iteration</option></select></th>
     </tr>
     <tr>
-        <th>ID</th>
         <th>Microservice</th>
         <th>API</th>
         <th>Status</th>
         <th>Tester</th>
+        <th>Delivery Date</th>
+        <th>Planned End Date</th>
         <th>Actual End Status</th>
         <th>Iteration</th>
     </tr>
@@ -78,11 +83,12 @@
 
 <script>
     const filters = {
-        id: '',
         microserviceName: '',
         apiName: '',
         apiStatus: '',
         testerName: '',
+        deliveryDate: '',
+        plannedEndDate: '',
         status: '',
         iterationCount: '',
         includePrevious: false
@@ -92,11 +98,12 @@
 
     document.querySelectorAll('.filter-row select').forEach(select => {
         select.addEventListener('change', () => {
-            filters.id = document.getElementById('filterId').value;
             filters.microserviceName = document.getElementById('filterMicroservice').value;
             filters.apiName = document.getElementById('filterApi').value;
             filters.apiStatus = document.getElementById('filterStatus').value;
             filters.testerName = document.getElementById('filterTester').value;
+            filters.deliveryDate = document.getElementById('filterDeliveryDate').value;
+            filters.plannedEndDate = document.getElementById('filterPlannedEndDate').value;
             filters.status = document.getElementById('filterEndStatus').value;
             filters.iterationCount = document.getElementById('filterIteration').value;
             filters.includePrevious = document.getElementById('showPrevious').checked;
@@ -130,11 +137,12 @@
         data.forEach(row => {
             const tr = document.createElement('tr');
             tr.innerHTML = `
-                <td>${row.id ?? '—'}</td>
                 <td>${row.microserviceName ?? '—'}</td>
                 <td>${row.apiName ?? '—'}</td>
                 <td>${row.apiStatus ?? '—'}</td>
                 <td>${row.testerName ?? '—'}</td>
+                <td>${row.deliveryDate ?? '—'}</td>
+                <td>${row.plannedEndDate ?? '—'}</td>
                 <td>${row.status ?? '—'}</td>
                 <td>${row.iterationCount ?? '—'}</td>
             `;
@@ -142,16 +150,19 @@
         });
     }
 
+    const choiceInstances = {};
+
     function populateDropdowns(data) {
         const getUnique = (arr, key) =>
             [...new Set(arr.map(item => item[key]).filter(val => val !== null && val !== undefined))].sort();
 
         const fields = {
-            filterId: 'id',
             filterMicroservice: 'microserviceName',
             filterApi: 'apiName',
             filterStatus: 'apiStatus',
             filterTester: 'testerName',
+            filterDeliveryDate: 'deliveryDate',
+            filterPlannedEndDate: 'plannedEndDate',
             filterEndStatus: 'status',
             filterIteration: 'iterationCount'
         };
@@ -160,11 +171,24 @@
             const select = document.getElementById(selectId);
             const current = select.value;
             const options = getUnique(data, key);
+
             select.innerHTML = `<option value="">${select.options[0].text}</option>`;
             options.forEach(val => {
                 select.innerHTML += `<option value="${val}">${val}</option>`;
             });
             select.value = current;
+
+            // Initialize or update Choices.js
+            if (choiceInstances[selectId]) {
+                choiceInstances[selectId].destroy();
+            }
+
+            choiceInstances[selectId] = new Choices(select, {
+                searchEnabled: true,
+                itemSelectText: '',
+                shouldSort: false,
+                allowHTML: false
+            });
         }
     }
 

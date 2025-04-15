@@ -50,7 +50,11 @@ public class ApiHistoryDynamicFilterService {
             List<Predicate> predicates = new ArrayList<>();
             filters.forEach((key, value) -> {
                 if (value != null && !value.isEmpty() && !key.equals("includePrevious")) {
-                    predicates.add(cb.equal(root.get(key), value));
+                    if (key.equals("deliveryDate") || key.equals("plannedEndDate")) {
+                        predicates.add(cb.equal(root.get(key), java.sql.Date.valueOf(value)));
+                    } else {
+                        predicates.add(cb.equal(root.get(key), value));
+                    }
                 }
             });
             return cb.and(predicates.toArray(new Predicate[0]));
